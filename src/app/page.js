@@ -159,7 +159,7 @@ if (
   document.head.appendChild(styleTag);
 }
 
-const API_URL = "https://howsapp.quantafile.com"; // Replace with your backend API URL
+const API_URL = "http://localhost:5000"; // Replace with your backend API URL
 const TENOR_KEY = "AIzaSyBB1R4-oWLLvvjgDl0pNJzEhcH6RnhiZNA"; // Replace with your Tenor API key
 let socket = null;
 
@@ -518,7 +518,7 @@ export default function ChatApp() {
 
   useEffect(() => {
     if (!socketInitialized.current) {
-      socket = io("https://howsapp.quantafile.com", {
+      socket = io("http://localhost:5000", {
         transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 5,
@@ -2314,7 +2314,7 @@ const handleGifCategoryClick = (category) => {
           <div className="text-center mb-8">
             <div className="text-6xl md:text-8xl mb-6">
               <img
-                src="/logolight.png"
+                src="/logoligh.png"
                 alt="Logo Light"
                 className="mx-auto w-32 h-32 lg:w-20 lg:h-20 "
               />

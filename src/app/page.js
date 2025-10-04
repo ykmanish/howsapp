@@ -4055,7 +4055,7 @@ const handleGifCategoryClick = (category) => {
       ) : searchedGifs.length > 0 ? (
         <div>
           <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">
-            Results for "{selectedGifCategory}"
+            Results for &quot;{selectedGifCategory}&quot;
           </p>
           <div className="grid grid-cols-2 gap-3">
             {searchedGifs.map((gif) => (

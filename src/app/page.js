@@ -129,7 +129,7 @@ if (
   document.head.appendChild(styleTag);
 }
 
-const API_URL = "http://localhost:5000";
+const API_URL = "https://howsapp.quantafile.com";
 const TENOR_KEY = "AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ";
 let socket = null;
 
@@ -420,7 +420,7 @@ export default function ChatApp() {
   
   useEffect(() => {
     if (!socketInitialized.current) {
-      socket = io("http://localhost:5000", {
+      socket = io("https://howsapp.quantafile.com", {
         transports: ["websocket"],
         reconnection: true,
         reconnectionAttempts: 5,

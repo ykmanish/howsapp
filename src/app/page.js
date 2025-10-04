@@ -2293,6 +2293,15 @@ const handleGifCategoryClick = (category) => {
     backgroundRepeat: "no-repeat",
   };
 
+  const backgroundStyle = {
+    backgroundImage: darkMode ? "url('/welbg.jpeg')" : "url('/welbg.jpeg')",
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  };
+
+  
+
   // Auth Screen
   if (!isAuthenticated) {
     return (
@@ -2307,14 +2316,14 @@ const handleGifCategoryClick = (category) => {
               <img
                 src="/logolight.png"
                 alt="Logo Light"
-                className="mx-auto w-32 h-32 lg:w-20 lg:h-20 dark:hidden"
+                className="mx-auto w-32 h-32 lg:w-20 lg:h-20 "
               />
 
-              <img
+              {/* <img
                 src="/logodark.png"
                 alt="Logo Dark"
                 className="mx-auto w-32 h-32 md:w-20 md:h-20 hidden dark:block"
-              />
+              /> */}
             </div>
             <h1 className="text-3xl small font-bold text-black mb-2">
               {isLogin ? "Howsapp!" : "Create Account"}
@@ -2339,7 +2348,7 @@ const handleGifCategoryClick = (category) => {
                   onChange={(e) =>
                     setFormData({ ...formData, username: e.target.value })
                   }
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                  className="w-full px-4 dark:text-black py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
                   required
                 />
               </div>
@@ -2353,7 +2362,7 @@ const handleGifCategoryClick = (category) => {
                 onChange={(e) =>
                   setFormData({ ...formData, email: e.target.value })
                 }
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                className="w-full px-4 dark:text-black py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
                 required
               />
             </div>
@@ -2366,7 +2375,7 @@ const handleGifCategoryClick = (category) => {
                 onChange={(e) =>
                   setFormData({ ...formData, password: e.target.value })
                 }
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
+                className="w-full px-4 py-3 dark:text-black rounded-xl border border-gray-200 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 outline-none transition"
                 required
               />
             </div>
@@ -2810,7 +2819,7 @@ const handleGifCategoryClick = (category) => {
         )}
 
         {/* Chat Area */}
-        <div className="flex-1 bg-white dark:bg-[#101010] rounded-3xl shadow-xl flex flex-col overflow-hidden transition-colors duration-300">
+        <div  className="flex-1 bg-white dark:bg-[#101010] rounded-3xl shadow-xl flex flex-col overflow-hidden transition-colors duration-300">
           {selectedChat ? (
             <>
               {/* Chat Header */}
@@ -4174,7 +4183,7 @@ const handleGifCategoryClick = (category) => {
               </div>
             </>
           ) : (
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1  flex items-center justify-center p-4">
               <div className="text-center">
                 <div className="text-6xl md:text-8xl mb-6">
                   <img
@@ -4193,10 +4202,10 @@ const handleGifCategoryClick = (category) => {
                 <h2 className="text-2xl md:text-3xl small font-bold text-black dark:text-gray-300 mb-3">
                   Howsapp!
                 </h2>
-                <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base">
+                <p className="text-black dark:text-gray-400 text-sm md:text-base">
                   Select a conversation to start chatting
                 </p>
-                <div className="mt-4 flex justify-center items-center gap-2 text-sm text-zinc-700 dark:text-gray-500">
+                <div className="mt-4 flex justify-center items-center gap-2 text-sm text-black dark:text-gray-500">
                   <img
                     src="/secure.png"
                     alt="Secure"

@@ -2314,7 +2314,7 @@ const handleGifCategoryClick = (category) => {
           <div className="text-center mb-8">
             <div className="text-6xl md:text-8xl mb-6">
               <img
-                src="/logoligh.png"
+                src="/logolight.png"
                 alt="Logo Light"
                 className="mx-auto w-32 h-32 lg:w-20 lg:h-20 "
               />

@@ -1,26 +1,92 @@
 @import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+@variant dark (&:where(.dark, .dark *));
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FDFAF5
 }
+/* Hide scrollbar for Chrome, Safari, and Edge */
+::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+/* Hide scrollbar for IE, Edge, and Firefox */
+html {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+
+@font-face {
+  font-family: "Regular";
+  src: url("./font/regular.otf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+@font-face {
+  font-family: "Gvibet";
+  src: url("./font/regular.otf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+@font-face {
+  font-family: "Starlight";
+  src: url("./font/arivo.ttf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+@font-face {
+  font-family: "Beboom";
+  src: url("./font/ovso.otf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+
+@font-face {
+  font-family: "Goodly";
+  src: url("./font/goodly.otf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+
+@font-face {
+  font-family: "Geist";
+  src: url("./font/geist.ttf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+
+@font-face {
+  font-family: "Rayton";
+  src: url("./font/rayton.ttf") format("truetype");
+  /* Add additional font weights and styles if needed */
+}
+
+.newq{
+  font-family: "Geist";
+}
+.small {
+  font-family: "Regular";
+}
+
+.smallt {
+  font-family: "Gvibet";
+}
+
+.star{
+  font-family: "Starlight";
+  
+}
+
+.good{
+  font-family: "Goodly";
+}
+
+.boom{
+  font-family: "Beboom";
+}
+
+.ray{
+  font-family: "Rayton";
+}
+
+

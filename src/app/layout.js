@@ -31,7 +31,7 @@ export default function RootLayout({ children }) {
         </div>
        
       </body>
-      <div  className=" newq flex flex-col items-center justify-center min-h-screen text-center px-4">
+      <div  className=" newq flex lg:hidden  flex-col items-center justify-center min-h-screen text-center px-4">
         <h1>
           Coming Soon for Mobile devices!
           <span className="text-blue-500"> Stay Tuned!</span>

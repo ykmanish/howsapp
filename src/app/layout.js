@@ -20,14 +20,23 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-     
       <body
-        className={`${geistSans.variable} ${geistMono.variable} newq antialiased`}
-      > <ThemeProviders>
-        {children}
-        </ThemeProviders>
+        className={`${geistSans.variable} ${geistMono.variable} newq  antialiased`}
+      >
+        {" "}
+        <div className="hidden lg:block">
+           <ThemeProviders>
+          {children}
+          </ThemeProviders>
+        </div>
+       
       </body>
-      
+      <div  className=" newq flex flex-col items-center justify-center min-h-screen text-center px-4">
+        <h1>
+          Coming Soon for Mobile devices!
+          <span className="text-blue-500"> Stay Tuned!</span>
+        </h1>
+      </div>
     </html>
   );
 }

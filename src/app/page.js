@@ -2067,8 +2067,8 @@ const handleGifCategoryClick = (category) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (file.size > 50 * 1024 * 1024) {
-      toast.error("File size must be less than 50MB");
+    if (file.size > 1 * 1024 * 1024) {
+      toast.error("File size must be less than 1MB");
       return;
     }
 
@@ -4999,7 +4999,7 @@ const handleGifCategoryClick = (category) => {
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Select File (Max 50MB)
+                      Select File (Max 5MB)
                     </label>
                     <input
                       type="file"

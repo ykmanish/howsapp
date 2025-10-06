@@ -4431,7 +4431,7 @@ export default function ChatApp() {
               Edit Profile
             </h2>
             <div className="space-y-4">
-              <div>
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Username
                 </label>
@@ -4443,7 +4443,7 @@ export default function ChatApp() {
                   }
                   className="w-full px-4 py-2 disabled:opacity-50 rounded-xl border border-gray-200 dark:border-zinc-800 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-800 text-gray-800 dark:text-white"
                 />
-              </div>
+              </div> */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   Bio

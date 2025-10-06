@@ -4706,7 +4706,7 @@ export default function ChatApp() {
                   onChange={(e) =>
                     setGroupForm({ ...groupForm, name: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-900 text-gray-800 dark:text-white"
                 />
               </div>
               <div>
@@ -4719,7 +4719,7 @@ export default function ChatApp() {
                     setGroupForm({ ...groupForm, description: e.target.value })
                   }
                   rows={2}
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-white"
+                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-900 text-gray-800 dark:text-white"
                 />
               </div>
               <div>

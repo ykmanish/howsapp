@@ -4500,7 +4500,7 @@ export default function ChatApp() {
       {/* Add Contact Modal */}
       {showAddContactModal && (
         <div className="fixed inset-0 bg-black/70 dark:bg-black/95 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#101010] rounded-3xl p-6 md:p-8 w-full max-w-md animate-slide-up">
+          <div className="bg-white dark:bg-[#101010] rounded-3xl p-6 md:p-8 w-full max-w-lg animate-slide-up">
             <h2 className="text-2xl font-bold mb-4 text-black small dark:text-white">
               Add Contact
             </h2>

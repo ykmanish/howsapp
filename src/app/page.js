@@ -5,7 +5,6 @@ import axios from "axios";
 import { io } from "socket.io-client";
 import gsap from "gsap";
 import EmojiPicker from "emoji-picker-react";
-import GifPicker from "gif-picker-react";
 import Confetti from "react-confetti";
 import confetti from "canvas-confetti";
 import { MentionsInput, Mention } from "react-mentions";
@@ -115,7 +114,6 @@ const mentionsInputStyles = `
     ring-color: #93c5fd;
   }
 
-  /* Loading animation */
   @keyframes spin {
     to { transform: rotate(360deg); }
   }
@@ -159,43 +157,19 @@ if (
   document.head.appendChild(styleTag);
 }
 
-const API_URL = "https://howsapp.quantafile.com"; // Replace with your backend API URL
-const TENOR_KEY = "AIzaSyBB1R4-oWLLvvjgDl0pNJzEhcH6RnhiZNA"; // Replace with your Tenor API key
+const API_URL = "https://howsapp.quantafile.com"; // Replace with your backend URL
+const TENOR_KEY = "AIzaSyBB1R4-oWLLvvjgDl0pNJzEhcH6RnhiZNA";
 let socket = null;
 
 const STICKERS = [
-  "👍",
-  "❤️",
-  "😂",
-  "😮",
-  "😢",
-  "🔥",
-  "🎉",
-  "👏",
-  "🙏",
-  "💯",
-  "🎊",
-  "✨",
-  "💪",
-  "🤝",
-  "👌",
-  "💡",
-  "🚀",
-  "⭐",
-  "💖",
-  "🌟",
+  "👍", "❤️", "😂", "😮", "😢", "🔥", "🎉", "👏", "🙏", "💯",
+  "🎊", "✨", "💪", "🤝", "👌", "💡", "🚀", "⭐", "💖", "🌟",
 ];
 
 const QUICK_REACTIONS = ["❤️", "😂", "😮", "😢", "🙏", "👍"];
 
 const EMOTION_TRIGGERS = {
-  congratulations: [
-    "congratulations",
-    "congrats",
-    "congratulation",
-    "well done",
-    "great job",
-  ],
+  congratulations: ["congratulations", "congrats", "congratulation", "well done", "great job"],
   celebration: ["party", "celebrate", "yay", "woohoo", "hurray", "hooray"],
   love: ["love you", "i love you", "love u", "❤️", "💕", "💖"],
   success: ["success", "achieved", "won", "victory", "passed"],
@@ -380,7 +354,14 @@ export default function ChatApp() {
   const [viewOnceMode, setViewOnceMode] = useState(false);
   const [showViewOnceModal, setShowViewOnceModal] = useState(false);
   const [viewOnceImage, setViewOnceImage] = useState(null);
-  const [viewOnceTimer, setViewOnceTimer] = useState();
+  const [viewOnceTimer, setViewOnceTimer] = useState(10);
+
+  // NEW: Notification states
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [showNotificationDropdown, setShowNotificationDropdown] = useState(false);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [showFriendRequestModal, setShowFriendRequestModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const messageContainerRef = useRef(null);
@@ -396,6 +377,7 @@ export default function ChatApp() {
   const messageRefs = useRef({});
   const messagesTopRef = useRef(null);
   const processedMessageIds = useRef(new Set());
+  const notificationDropdownRef = useRef(null);
 
   const mentionStyle = {
     control: {
@@ -516,6 +498,7 @@ export default function ChatApp() {
     },
   };
 
+  // Initialize Socket
   useEffect(() => {
     if (!socketInitialized.current) {
       socket = io("https://howsapp.quantafile.com", {
@@ -535,117 +518,109 @@ export default function ChatApp() {
     };
   }, []);
 
-  // Fetch trending GIFs when picker opens
-useEffect(() => {
-  if (showGifPicker && trendingGifs.length === 0) {
-    fetchTrendingGifs();
-  }
-}, [showGifPicker]);
+  // Fetch trending GIFs
+  useEffect(() => {
+    if (showGifPicker && trendingGifs.length === 0) {
+      fetchTrendingGifs();
+    }
+  }, [showGifPicker]);
 
-// Fetch trending GIFs using Tenor API v2
-const fetchTrendingGifs = async () => {
-  setLoadingGifs(true);
-  try {
-    // Using Google's Tenor API v2 with a valid key
-    const response = await fetch(
-      `https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&client_key=howsapp&limit=20&media_filter=gif,tinygif`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  const fetchTrendingGifs = async () => {
+    setLoadingGifs(true);
+    try {
+      const response = await fetch(
+        `https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&client_key=howsapp&limit=20&media_filter=gif,tinygif`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("✅ Trending GIFs loaded:", data.results?.length || 0);
+      setTrendingGifs(data.results || []);
+    } catch (error) {
+      console.error("❌ Error fetching trending GIFs:", error);
+      toast.error("Failed to load GIFs. Please try again.");
+    } finally {
+      setLoadingGifs(false);
+    }
+  };
+
+  const searchGifs = async (query) => {
+    if (!query.trim()) {
+      setSearchedGifs([]);
+      setSelectedGifCategory("");
+      return;
     }
     
-    const data = await response.json();
-    console.log("✅ Trending GIFs loaded:", data.results?.length || 0);
-    setTrendingGifs(data.results || []);
-  } catch (error) {
-    console.error("❌ Error fetching trending GIFs:", error);
-    toast.error("Failed to load GIFs. Please try again.");
-  } finally {
-    setLoadingGifs(false);
-  }
-};
+    setLoadingGifs(true);
+    setSelectedGifCategory(query);
+    
+    try {
+      const response = await fetch(
+        `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
+          query
+        )}&key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&client_key=howsapp&limit=20&media_filter=gif,tinygif`
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log("✅ Search results:", data.results?.length || 0);
+      
+      if (data.results && data.results.length > 0) {
+        setSearchedGifs(data.results);
+      } else {
+        setSearchedGifs([]);
+        toast.info(`No GIFs found for "${query}"`);
+      }
+    } catch (error) {
+      console.error("❌ Error searching GIFs:", error);
+      toast.error("Failed to search GIFs. Please try again.");
+      setSearchedGifs([]);
+    } finally {
+      setLoadingGifs(false);
+    }
+  };
 
-// Search GIFs
-const searchGifs = async (query) => {
-  if (!query.trim()) {
+  const handleGifClick = (gif) => {
+    console.log("🎬 GIF clicked:", gif);
+    
+    let gifUrl = null;
+    
+    if (gif && gif.media_formats) {
+      gifUrl = 
+        gif.media_formats.gif?.url ||
+        gif.media_formats.mediumgif?.url ||
+        gif.media_formats.tinygif?.url ||
+        gif.media_formats.nanogif?.url;
+    }
+    
+    console.log("📤 Extracted GIF URL:", gifUrl);
+    
+    if (!gifUrl) {
+      console.error("❌ Could not extract GIF URL from:", gif);
+      toast.error("Failed to get GIF. Please try another one.");
+      return;
+    }
+    
+    sendMessage(null, gifUrl);
+    setShowGifPicker(false);
+    setGifSearchQuery("");
     setSearchedGifs([]);
     setSelectedGifCategory("");
-    return;
-  }
-  
-  setLoadingGifs(true);
-  setSelectedGifCategory(query);
-  
-  try {
-    const response = await fetch(
-      `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(
-        query
-      )}&key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&client_key=howsapp&limit=20&media_filter=gif,tinygif`
-    );
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    
-    const data = await response.json();
-    console.log("✅ Search results:", data.results?.length || 0);
-    
-    if (data.results && data.results.length > 0) {
-      setSearchedGifs(data.results);
-    } else {
-      setSearchedGifs([]);
-      toast.info(`No GIFs found for "${query}"`);
-    }
-  } catch (error) {
-    console.error("❌ Error searching GIFs:", error);
-    toast.error("Failed to search GIFs. Please try again.");
-    setSearchedGifs([]);
-  } finally {
-    setLoadingGifs(false);
-  }
-};
+    toast.success("GIF sent! 🎬");
+  };
 
-// Handle GIF click
-const handleGifClick = (gif) => {
-  console.log("🎬 GIF clicked:", gif);
-  
-  // Extract GIF URL from Tenor v2 API response
-  let gifUrl = null;
-  
-  if (gif && gif.media_formats) {
-    // Try to get the best quality GIF
-    gifUrl = 
-      gif.media_formats.gif?.url ||
-      gif.media_formats.mediumgif?.url ||
-      gif.media_formats.tinygif?.url ||
-      gif.media_formats.nanogif?.url;
-  }
-  
-  console.log("📤 Extracted GIF URL:", gifUrl);
-  
-  if (!gifUrl) {
-    console.error("❌ Could not extract GIF URL from:", gif);
-    toast.error("Failed to get GIF. Please try another one.");
-    return;
-  }
-  
-  // Send the GIF
-  sendMessage(null, gifUrl);
-  setShowGifPicker(false);
-  setGifSearchQuery("");
-  setSearchedGifs([]);
-  setSelectedGifCategory("");
-  toast.success("GIF sent! 🎬");
-};
+  const handleGifCategoryClick = (category) => {
+    setGifSearchQuery(category);
+    searchGifs(category);
+  };
 
-// Handle category click
-const handleGifCategoryClick = (category) => {
-  setGifSearchQuery(category);
-  searchGifs(category);
-};
-
-
+  // Load initial data
   useEffect(() => {
     const token = localStorage.getItem("token");
     const user = localStorage.getItem("user");
@@ -664,6 +639,8 @@ const handleGifCategoryClick = (category) => {
       fetchGroups();
       fetchUnreadCounts();
       fetchTaskReminders();
+      fetchNotifications();
+      fetchFriendRequests();
 
       if (socket) {
         socket.emit("userOnline", JSON.parse(user).id);
@@ -671,6 +648,7 @@ const handleGifCategoryClick = (category) => {
     }
   }, []);
 
+  // Task reminders interval
   useEffect(() => {
     if (isAuthenticated) {
       const interval = setInterval(() => {
@@ -680,7 +658,159 @@ const handleGifCategoryClick = (category) => {
       return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
-  
+
+  // NEW: Fetch notifications
+  const fetchNotifications = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/users/notifications`);
+      setNotifications(response.data);
+      
+      const countResponse = await axios.get(`${API_URL}/users/notifications/unread-count`);
+      setUnreadNotificationCount(countResponse.data.count);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    }
+  };
+
+  // NEW: Fetch friend requests
+  const fetchFriendRequests = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/users/friend-requests`);
+      setFriendRequests(response.data);
+    } catch (error) {
+      console.error('Error fetching friend requests:', error);
+    }
+  };
+
+  // NEW: Socket listener for notifications
+  useEffect(() => {
+    if (!socket || !isAuthenticated) return;
+
+    const handleNewNotification = ({ userId, notification }) => {
+      if (userId === currentUser?.id) {
+        setNotifications(prev => [notification, ...prev]);
+        setUnreadNotificationCount(prev => prev + 1);
+        
+        // Show toast notification
+        if (notification.type === 'friend_request') {
+          toast.success(`${notification.sender.username} sent you a friend request!`, {
+            duration: 5000,
+            icon: '👋',
+          });
+          fetchFriendRequests();
+        } else if (notification.type === 'task_assigned') {
+          toast.info(notification.content, {
+            duration: 5000,
+            icon: '📋',
+          });
+          fetchTaskReminders();
+        }
+      }
+    };
+
+    const handleFriendRequestAccepted = ({ senderId, receiverId }) => {
+      if (senderId === currentUser?.id || receiverId === currentUser?.id) {
+        fetchContacts();
+        toast.success('Friend request accepted! 🎉');
+      }
+    };
+
+    socket.on('newNotification', handleNewNotification);
+    socket.on('friendRequestAccepted', handleFriendRequestAccepted);
+
+    return () => {
+      socket.off('newNotification', handleNewNotification);
+      socket.off('friendRequestAccepted', handleFriendRequestAccepted);
+    };
+  }, [socket, isAuthenticated, currentUser]);
+
+  // NEW: Mark notification as read
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await axios.patch(`${API_URL}/users/notifications/${notificationId}/read`);
+      setNotifications(prev =>
+        prev.map(n => n._id === notificationId ? { ...n, isRead: true } : n)
+      );
+      setUnreadNotificationCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // NEW: Mark all notifications as read
+  const markAllNotificationsAsRead = async () => {
+    try {
+      await axios.patch(`${API_URL}/users/notifications/read-all`);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadNotificationCount(0);
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // NEW: Handle notification click
+  const handleNotificationClick = async (notification) => {
+    await markNotificationAsRead(notification._id);
+    
+    if (notification.type === 'friend_request') {
+      setShowFriendRequestModal(true);
+    } else if (notification.type === 'task_assigned') {
+      // Find the group and open task modal
+      const task = tasks.find(t => t._id === notification.relatedId);
+      if (task) {
+        setSelectedTaskDetail(task.taskData || task);
+        setShowTaskDetailModal(true);
+      }
+    }
+    
+    setShowNotificationDropdown(false);
+  };
+
+  // NEW: Accept friend request
+  const handleAcceptFriendRequest = async (requestId) => {
+    try {
+      await axios.post(`${API_URL}/users/friend-request/${requestId}/accept`);
+      setFriendRequests(prev => prev.filter(req => req._id !== requestId));
+      await fetchContacts();
+      toast.success('Friend request accepted! 🎉');
+    } catch (error) {
+      console.error('Error accepting friend request:', error);
+      toast.error(error.response?.data?.error || 'Failed to accept friend request');
+    }
+  };
+
+  // NEW: Reject friend request
+  const handleRejectFriendRequest = async (requestId) => {
+    try {
+      await axios.post(`${API_URL}/users/friend-request/${requestId}/reject`);
+      setFriendRequests(prev => prev.filter(req => req._id !== requestId));
+      toast.success('Friend request rejected');
+    } catch (error) {
+      console.error('Error rejecting friend request:', error);
+      toast.error('Failed to reject friend request');
+    }
+  };
+
+  // Click outside to close notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        notificationDropdownRef.current &&
+        !notificationDropdownRef.current.contains(event.target)
+      ) {
+        setShowNotificationDropdown(false);
+      }
+    };
+
+    if (showNotificationDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotificationDropdown]);
+
   // Socket listeners for messaging - FIXED DUPLICATE MESSAGES
   useEffect(() => {
     if (!socket || !isAuthenticated) return;
@@ -988,7 +1118,6 @@ const handleGifCategoryClick = (category) => {
     }
   };
 
-  // Trigger confetti for all stickers
   const triggerStickerConfetti = (sticker) => {
     const stickerShape = confetti.shapeFromText({ text: sticker, scalar: 2 });
     confetti({
@@ -1196,6 +1325,7 @@ const handleGifCategoryClick = (category) => {
     }
   };
 
+  // FIXED: Document search
   const searchDocuments = async () => {
     if (!documentSearchQuery.trim() || !selectedChat) return;
 
@@ -1260,6 +1390,8 @@ const handleGifCategoryClick = (category) => {
       fetchGroups();
       fetchUnreadCounts();
       fetchTaskReminders();
+      fetchNotifications();
+      fetchFriendRequests();
 
       toast.success(
         isLogin ? "Welcome back!" : "Account created successfully!"
@@ -1284,7 +1416,7 @@ const handleGifCategoryClick = (category) => {
     setLoadingMessages(true);
     processedMessageIds.current.clear();
 
-    // **FIXED: Clear unread count immediately when opening chat**
+    // FIXED: Clear unread count immediately when opening chat
     setUnreadCounts((prev) => {
       const newCounts = { ...prev };
       delete newCounts[chat._id];
@@ -1365,13 +1497,22 @@ const handleGifCategoryClick = (category) => {
     }
   };
 
+  // NEW: Close chat function
+  const closeChat = () => {
+    setSelectedChat(null);
+    setChatType(null);
+    setMessages([]);
+    setReplyingTo(null);
+    setEditingMessage(null);
+    setMessageInput("");
+    setSidebarOpen(true);
+  };
+
   const markMessagesAsRead = (messageIds) => {
     if (socket) {
       socket.emit("messageRead", { messageIds, userId: currentUser.id });
     }
   };
-
-  // Rest of the code continues... Due to length, I'll continue in the next message.
 
   const handleInputChange = (e, newValue, newPlainTextValue, mentions) => {
     const value = newValue !== undefined ? newValue : e?.target?.value || "";
@@ -1470,7 +1611,7 @@ const handleGifCategoryClick = (category) => {
       await axios.post(`${API_URL}/messages/${message._id}/view`);
 
       setViewOnceImage(`${API_URL}${message.fileUrl}`);
-      setViewOnceTimer();
+      setViewOnceTimer(10);
       setShowViewOnceModal(true);
 
       document.addEventListener("keyup", preventScreenshot);
@@ -1487,7 +1628,7 @@ const handleGifCategoryClick = (category) => {
   const handleCloseViewOnce = () => {
     setShowViewOnceModal(false);
     setViewOnceImage(null);
-    setViewOnceTimer();
+    setViewOnceTimer(10);
     document.removeEventListener("keyup", preventScreenshot);
     document.removeEventListener("contextmenu", preventRightClick);
   };
@@ -1638,8 +1779,6 @@ const handleGifCategoryClick = (category) => {
     chatInputRef.current?.focus();
   };
 
-  
-
   const handleReaction = async (messageId, emoji) => {
     try {
       await axios.post(`${API_URL}/messages/${messageId}/react`, { emoji });
@@ -1705,17 +1844,17 @@ const handleGifCategoryClick = (category) => {
     setShowReactionsInfo(true);
   };
 
+  // UPDATED: Send friend request instead of direct contact add
   const handleAddContact = async () => {
     try {
-      await axios.post(`${API_URL}/users/add-contact`, {
+      await axios.post(`${API_URL}/users/friend-request`, {
         username: usernameInput,
       });
-      await fetchContacts();
       setShowAddContactModal(false);
       setUsernameInput("");
-      toast.success("Contact added successfully!");
+      toast.success("Friend request sent successfully! 👋");
     } catch (error) {
-      toast.error(error.response?.data?.error || "Failed to add contact");
+      toast.error(error.response?.data?.error || "Failed to send friend request");
     }
   };
 
@@ -1917,32 +2056,6 @@ const handleGifCategoryClick = (category) => {
         console.error("❌ Sender missing in task message");
       } else {
         socket.emit("sendMessage", taskMessageData);
-      }
-
-      if (taskForm.assignedTo && taskForm.assignedTo !== currentUser.id) {
-        const personalTaskMessage = {
-          sender: currentUser.id,
-          receiver: taskForm.assignedTo,
-          content: `📋 You have been assigned a new task: "${
-            taskForm.taskName
-          }"\n\nDeadline: ${new Date(
-            taskForm.deadline
-          ).toLocaleString()}\n\nDescription: ${
-            taskForm.description || "No description"
-          }`,
-          messageType: "task",
-          taskData: {
-            taskId: response.data._id,
-            taskName: taskForm.taskName,
-            deadline: taskForm.deadline,
-            assignedTo: taskForm.assignedTo,
-          },
-          timestamp: new Date(),
-        };
-
-        if (personalTaskMessage.sender) {
-          socket.emit("sendMessage", personalTaskMessage);
-        }
       }
 
       setShowTaskModal(false);
@@ -2300,8 +2413,6 @@ const handleGifCategoryClick = (category) => {
     backgroundRepeat: "no-repeat",
   };
 
-  
-
   // Auth Screen
   if (!isAuthenticated) {
     return (
@@ -2318,12 +2429,6 @@ const handleGifCategoryClick = (category) => {
                 alt="Logo Light"
                 className="mx-auto w-32 h-32 lg:w-20 lg:h-20 "
               />
-
-              {/* <img
-                src="/logodark.png"
-                alt="Logo Dark"
-                className="mx-auto w-32 h-32 md:w-20 md:h-20 hidden dark:block"
-              /> */}
             </div>
             <h1 className="text-3xl small font-bold text-black mb-2">
               {isLogin ? "Howsapp!" : "Create Account"}
@@ -2447,9 +2552,6 @@ const handleGifCategoryClick = (category) => {
               className="max-h-screen max-w-screen object-contain"
               onContextMenu={(e) => e.preventDefault()}
             />
-            {/* <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full font-semibold">
-              📸 Screenshots Disabled - View Once
-            </div> */}
           </div>
         </div>
       )}
@@ -2615,6 +2717,110 @@ const handleGifCategoryClick = (category) => {
                   @{currentUser.username}
                 </p>
               </div>
+
+              {/* NEW: Notification Bell */}
+              <div className="relative" ref={notificationDropdownRef}>
+                <button
+                  onClick={() => setShowNotificationDropdown(!showNotificationDropdown)}
+                  className="p-2 hover:bg-gray-100 cursor-pointer dark:hover:bg-gray-800 rounded-full transition relative"
+                  title="Notifications"
+                >
+                  <svg
+                    className="w-5 h-5 text-gray-600 dark:text-gray-300"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
+                    />
+                  </svg>
+                  {unreadNotificationCount > 0 && (
+                    <span className="absolute top-0 right-0 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold animate-pulse">
+                      {unreadNotificationCount > 9 ? '9+' : unreadNotificationCount}
+                    </span>
+                  )}
+                </button>
+
+                {showNotificationDropdown && (
+                  <div className="absolute -right-20 top-9 w-80 bg-white dark:bg-[#101010] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 z-50 max-h-96 overflow-hidden flex flex-col">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                      <h3 className="font-bold text-gray-800 dark:text-white">Notifications</h3>
+                      {unreadNotificationCount > 0 && (
+                        <button
+                          onClick={markAllNotificationsAsRead}
+                          className="text-xs text-blue-500 hover:text-blue-600"
+                        >
+                          Mark all read
+                        </button>
+                      )}
+                    </div>
+                    
+                    <div className="overflow-y-auto flex-1">
+                      {notifications.length === 0 ? (
+                        <div className="text-center py-8">
+                          <div className="text-4xl mb-2">🔔</div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400">
+                            No notifications yet
+                          </p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification._id}
+                            onClick={() => handleNotificationClick(notification)}
+                            className={`p-3 border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition ${
+                              !notification.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                            }`}
+                          >
+                            <div className="flex items-start space-x-3">
+                              <img
+                                src={notification.sender.avatar}
+                                alt={notification.sender.username}
+                                className="w-10 h-10 rounded-full"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-800 dark:text-white">
+                                  {notification.content}
+                                </p>
+                                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                  {new Date(notification.createdAt).toLocaleString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                </p>
+                              </div>
+                              {!notification.isRead && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+
+                    {friendRequests.length > 0 && (
+                      <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                        <button
+                          onClick={() => {
+                            setShowFriendRequestModal(true);
+                            setShowNotificationDropdown(false);
+                          }}
+                          className="w-full px-4 py-2 bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition flex items-center justify-center gap-2"
+                        >
+                          <span>👥 {friendRequests.length} Friend Request{friendRequests.length > 1 ? 's' : ''}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
               <ThemeToggle
                 darkMode={darkMode}
                 toggleDarkMode={toggleDarkMode}
@@ -2722,28 +2928,6 @@ const handleGifCategoryClick = (category) => {
                           <h3 className="font-semibold small text-black dark:text-white truncate text-sm md:text-base">
                             {user.username}
                           </h3>
-                          {/* <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleShowUserInfo(user._id);
-                            }}
-                            className="text-blue-500 hover:text-blue-600"
-                            title="User info"
-                          >
-                            <svg
-                              className="w-4 h-4"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
-                            </svg>
-                          </button> */}
                         </div>
                         <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {user.bio}
@@ -2819,7 +3003,7 @@ const handleGifCategoryClick = (category) => {
         )}
 
         {/* Chat Area */}
-        <div  className="flex-1 bg-white dark:bg-[#101010] rounded-3xl shadow-xl flex flex-col overflow-hidden transition-colors duration-300">
+        <div className="flex-1 bg-white dark:bg-[#101010] rounded-3xl shadow-xl flex flex-col overflow-hidden transition-colors duration-300">
           {selectedChat ? (
             <>
               {/* Chat Header */}
@@ -2998,6 +3182,27 @@ const handleGifCategoryClick = (category) => {
                       </button>
                     </>
                   )}
+
+                  {/* NEW: Close Chat Button */}
+                  <button
+                    onClick={closeChat}
+                    className="p-2 bg-red-500 cursor-pointer rounded-full transition hover:bg-red-600"
+                    title="Close chat"
+                  >
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
@@ -3117,8 +3322,6 @@ const handleGifCategoryClick = (category) => {
                               isSender ? "justify-end" : "justify-start"
                             } group animate-slide-up`}
                           >
-                            {/* Message content - continuing in next message due to length */}
-
                             <div
                               className={`max-w-[85%] md:max-w-lg relative ${
                                 isSender ? "order-2" : "order-1"
@@ -3579,15 +3782,6 @@ const handleGifCategoryClick = (category) => {
                                   message.messageType !== "poll" &&
                                   message.messageType !== "document" && (
                                     <>
-                                      {/* <button
-                                        onClick={() =>
-                                          handlePinMessage(message._id)
-                                        }
-                                        className="p-2 bg-white dark:bg-gray-900 rounded-full shadow-lg hover:bg-gray-100 dark:hover:bg-gray-600"
-                                        title="Pin"
-                                      >
-                                        📌
-                                      </button> */}
                                       {message.messageType === "text" && (
                                         <button
                                           onClick={() =>
@@ -3799,7 +3993,7 @@ const handleGifCategoryClick = (category) => {
                 </div>
               )}
 
-              {/* Input Area with GIF Picker */}
+              {/* Input Area with GIF Picker - I'll send the complete GIF picker and all remaining modals separately */}
               <div className="bg-white dark:bg-[#101010] p-3 md:p-4 border-t border-gray-100 dark:border-gray-700 relative">
                 {replyingTo && (
                   <div className="mb-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border-l-4 border-blue-500 flex items-center justify-between">
@@ -3868,7 +4062,6 @@ const handleGifCategoryClick = (category) => {
                     </svg>
                   </button>
 
-                  {/* GIF PICKER BUTTON */}
                   <button
                     type="button"
                     onClick={() => setShowGifPicker(!showGifPicker)}
@@ -3990,165 +4183,158 @@ const handleGifCategoryClick = (category) => {
                   </div>
                 )}
 
-                {/* GIF PICKER */}
                 {/* GIF PICKER - WORKING VERSION */}
-{showGifPicker && (
-  <div className="absolute bottom-20 left-4 md:left-20 z-50 bg-white dark:bg-[#101010] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-[450px] max-h-[600px] overflow-hidden animate-slide-up">
-    {/* Header */}
-    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-      <div className="flex justify-between items-center mb-3">
-        <h3 className="font-bold text-gray-800 dark:text-white text-lg">
-          Choose a GIF
-        </h3>
-        <button
-          onClick={() => {
-            setShowGifPicker(false);
-            setGifSearchQuery("");
-            setSearchedGifs([]);
-            setSelectedGifCategory("");
-          }}
-          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none transition"
-        >
-          ✕
-        </button>
-      </div>
+                {showGifPicker && (
+                  <div className="absolute bottom-20 left-4 md:left-20 z-50 bg-white dark:bg-[#101010] rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 w-[450px] max-h-[600px] overflow-hidden animate-slide-up">
+                    <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                      <div className="flex justify-between items-center mb-3">
+                        <h3 className="font-bold text-gray-800 dark:text-white text-lg">
+                          Choose a GIF
+                        </h3>
+                        <button
+                          onClick={() => {
+                            setShowGifPicker(false);
+                            setGifSearchQuery("");
+                            setSearchedGifs([]);
+                            setSelectedGifCategory("");
+                          }}
+                          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-2xl leading-none transition"
+                        >
+                          ✕
+                        </button>
+                      </div>
 
-      {/* Search Bar */}
-      <div className="flex gap-2">
-        <input
-          type="text"
-          placeholder="Search Tenor..."
-          value={gifSearchQuery}
-          onChange={(e) => setGifSearchQuery(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && gifSearchQuery.trim()) {
-              searchGifs(gifSearchQuery);
-            }
-          }}
-          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-800 text-gray-800 dark:text-white text-sm"
-        />
-        <button
-          onClick={() => searchGifs(gifSearchQuery)}
-          disabled={loadingGifs || !gifSearchQuery.trim()}
-          className="px-5 py-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
-        >
-          {loadingGifs ? (
-            <>
-              <LoadingSpinner size="sm" color="white" />
-            </>
-          ) : (
-            "Search"
-          )}
-        </button>
-      </div>
-    </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          placeholder="Search Tenor..."
+                          value={gifSearchQuery}
+                          onChange={(e) => setGifSearchQuery(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && gifSearchQuery.trim()) {
+                              searchGifs(gifSearchQuery);
+                            }
+                          }}
+                          className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-800 text-gray-800 dark:text-white text-sm"
+                        />
+                        <button
+                          onClick={() => searchGifs(gifSearchQuery)}
+                          disabled={loadingGifs || !gifSearchQuery.trim()}
+                          className="px-5 py-2.5 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition disabled:bg-gray-400 disabled:cursor-not-allowed text-sm font-medium flex items-center gap-2"
+                        >
+                          {loadingGifs ? (
+                            <>
+                              <LoadingSpinner size="sm" color="white" />
+                            </>
+                          ) : (
+                            "Search"
+                          )}
+                        </button>
+                      </div>
+                    </div>
 
-    {/* GIF Grid */}
-    <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
-      {loadingGifs ? (
-        <div className="flex flex-col justify-center items-center py-20">
-          <LoadingSpinner size="lg" color="blue" />
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
-            Loading GIFs...
-          </p>
-        </div>
-      ) : searchedGifs.length > 0 ? (
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">
-            Results for &quot;{selectedGifCategory}&quot;
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {searchedGifs.map((gif) => (
-              <div
-                key={gif.id}
-                onClick={() => handleGifClick(gif)}
-                className="cursor-pointer rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-400 transition transform hover:scale-105 bg-gray-100 dark:bg-gray-800"
-                style={{ aspectRatio: '1/1' }}
-              >
-                <img
-                  src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}
-                  alt={gif.content_description || "GIF"}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : trendingGifs.length > 0 ? (
-        <div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium flex items-center gap-2">
-            <span>🔥</span> Trending GIFs
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {trendingGifs.map((gif) => (
-              <div
-                key={gif.id}
-                onClick={() => handleGifClick(gif)}
-                className="cursor-pointer rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-400 transition transform hover:scale-105 bg-gray-100 dark:bg-gray-800"
-                style={{ aspectRatio: '1/1' }}
-              >
-                <img
-                  src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}
-                  alt={gif.content_description || "GIF"}
-                  className="w-full h-full object-cover"
-                  loading="lazy"
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ) : (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">🎬</div>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            {gifSearchQuery
-              ? "No GIFs found"
-              : "Search for GIFs or try a category below"}
-          </p>
-        </div>
-      )}
-    </div>
+                    <div className="p-4 max-h-[400px] overflow-y-auto custom-scrollbar">
+                      {loadingGifs ? (
+                        <div className="flex flex-col justify-center items-center py-20">
+                          <LoadingSpinner size="lg" color="blue" />
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mt-3">
+                            Loading GIFs...
+                          </p>
+                        </div>
+                      ) : searchedGifs.length > 0 ? (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">
+                            Results for &quot;{selectedGifCategory}&quot;
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {searchedGifs.map((gif) => (
+                              <div
+                                key={gif.id}
+                                onClick={() => handleGifClick(gif)}
+                                className="cursor-pointer rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-400 transition transform hover:scale-105 bg-gray-100 dark:bg-gray-800"
+                                style={{ aspectRatio: '1/1' }}
+                              >
+                                <img
+                                  src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}
+                                  alt={gif.content_description || "GIF"}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : trendingGifs.length > 0 ? (
+                        <div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium flex items-center gap-2">
+                            <span>🔥</span> Trending GIFs
+                          </p>
+                          <div className="grid grid-cols-2 gap-3">
+                            {trendingGifs.map((gif) => (
+                              <div
+                                key={gif.id}
+                                onClick={() => handleGifClick(gif)}
+                                className="cursor-pointer rounded-xl overflow-hidden hover:ring-2 hover:ring-blue-400 transition transform hover:scale-105 bg-gray-100 dark:bg-gray-800"
+                                style={{ aspectRatio: '1/1' }}
+                              >
+                                <img
+                                  src={gif.media_formats?.tinygif?.url || gif.media_formats?.gif?.url}
+                                  alt={gif.content_description || "GIF"}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-16">
+                          <div className="text-6xl mb-4">🎬</div>
+                          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                            {gifSearchQuery
+                              ? "No GIFs found"
+                              : "Search for GIFs or try a category below"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
-    {/* Popular Categories */}
-    <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-900">
-      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase">
-        Popular searches
-      </p>
-      <div className="flex flex-wrap gap-2">
-        {[
-          { name: "Happy", emoji: "😊" },
-          { name: "Love", emoji: "❤️" },
-          { name: "Funny", emoji: "😂" },
-          { name: "Sad", emoji: "😢" },
-          { name: "Excited", emoji: "🎉" },
-          { name: "Dance", emoji: "💃" },
-          { name: "Thumbs Up", emoji: "👍" },
-          { name: "Clap", emoji: "👏" },
-        ].map((category) => (
-          <button
-            key={category.name}
-            onClick={() => handleGifCategoryClick(category.name)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition flex items-center gap-1 ${
-              selectedGifCategory === category.name
-                ? "bg-blue-500 text-white"
-                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900 dark:hover:text-blue-300"
-            }`}
-          >
-            <span>{category.emoji}</span>
-            <span>{category.name}</span>
-          </button>
-        ))}
-      </div>
-    </div>
+                    <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-zinc-900">
+                      <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2 uppercase">
+                        Popular searches
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { name: "Happy", emoji: "😊" },
+                          { name: "Love", emoji: "❤️" },
+                          { name: "Funny", emoji: "😂" },
+                          { name: "Sad", emoji: "😢" },
+                          { name: "Excited", emoji: "🎉" },
+                          { name: "Dance", emoji: "💃" },
+                          { name: "Thumbs Up", emoji: "👍" },
+                          { name: "Clap", emoji: "👏" },
+                        ].map((category) => (
+                          <button
+                            key={category.name}
+                            onClick={() => handleGifCategoryClick(category.name)}
+                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition flex items-center gap-1 ${
+                              selectedGifCategory === category.name
+                                ? "bg-blue-500 text-white"
+                                : "bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-blue-100 hover:text-blue-600 dark:hover:bg-blue-900 dark:hover:text-blue-300"
+                            }`}
+                          >
+                            <span>{category.emoji}</span>
+                            <span>{category.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-    {/* Powered by Tenor */}
-    <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-center">
-      <p className="text-xs text-gray-400">Powered by Tenor</p>
-    </div>
-  </div>
-)}
-
+                    <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 text-center">
+                      <p className="text-xs text-gray-400">Powered by Tenor</p>
+                    </div>
+                  </div>
+                )}
 
                 {/* STICKER PICKER */}
                 {showStickerPicker && (
@@ -4183,7 +4369,7 @@ const handleGifCategoryClick = (category) => {
               </div>
             </>
           ) : (
-            <div className="flex-1  flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-4">
               <div className="text-center">
                 <div className="text-6xl md:text-8xl mb-6">
                   <img
@@ -4191,14 +4377,12 @@ const handleGifCategoryClick = (category) => {
                     alt="Logo Light"
                     className="mx-auto w-32 h-32 md:w-48 md:h-48 dark:hidden"
                   />
-
                   <img
                     src="/logodark.png"
                     alt="Logo Dark"
                     className="mx-auto w-32 h-32 md:w-48 md:h-48 hidden dark:block"
                   />
                 </div>
-
                 <h2 className="text-2xl md:text-3xl small font-bold text-black dark:text-gray-300 mb-3">
                   Howsapp!
                 </h2>
@@ -4236,6 +4420,8 @@ const handleGifCategoryClick = (category) => {
           )}
         </div>
       </div>
+
+      {/* ALL MODALS START HERE */}
 
       {/* Profile Modal */}
       {showProfileModal && (
@@ -4319,7 +4505,7 @@ const handleGifCategoryClick = (category) => {
               Add Contact
             </h2>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              Enter the @username of the person you want to add
+              Enter the @username of the person you want to add. They will receive a friend request.
             </p>
             <input
               type="text"
@@ -4333,7 +4519,7 @@ const handleGifCategoryClick = (category) => {
                 onClick={handleAddContact}
                 className="flex-1 px-4 py-2 cursor-pointer bg-blue-500 text-white rounded-xl font-medium hover:bg-blue-600 transition"
               >
-                Add Contact
+                Send Friend Request
               </button>
               <button
                 onClick={() => setShowAddContactModal(false)}
@@ -4342,6 +4528,73 @@ const handleGifCategoryClick = (category) => {
                 Cancel
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* NEW: Friend Request Modal */}
+      {showFriendRequestModal && (
+        <div className="fixed inset-0 bg-black/70 dark:bg-black/95 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#101010] rounded-3xl p-6 md:p-8 w-full max-w-md max-h-[80vh] overflow-y-auto animate-slide-up">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold text-black small dark:text-white">
+                Friend Requests
+              </h2>
+              <button
+                onClick={() => setShowFriendRequestModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
+              >
+                ✕
+              </button>
+            </div>
+            
+            {friendRequests.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="text-6xl mb-4">👥</div>
+                <p className="text-gray-500 dark:text-gray-400">
+                  No pending friend requests
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {friendRequests.map((request) => (
+                  <div
+                    key={request._id}
+                    className="p-4 bg-gray-50 dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-gray-700"
+                  >
+                    <div className="flex items-center space-x-3 mb-3">
+                      <img
+                        src={request.sender.avatar}
+                        alt={request.sender.username}
+                        className="w-12 h-12 rounded-full"
+                      />
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-gray-800 dark:text-white">
+                          {request.sender.username}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">
+                          {request.sender.bio}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAcceptFriendRequest(request._id)}
+                        className="flex-1 px-4 py-2 bg-green-500 text-white rounded-xl font-medium hover:bg-green-600 transition"
+                      >
+                        Accept
+                      </button>
+                      <button
+                        onClick={() => handleRejectFriendRequest(request._id)}
+                        className="flex-1 px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-600 transition"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -4435,7 +4688,7 @@ const handleGifCategoryClick = (category) => {
         </div>
       )}
 
-      {/* Create Group Modal */}
+            {/* Create Group Modal */}
       {showCreateGroupModal && (
         <div className="fixed inset-0 bg-black/70 dark:bg-black/95 flex items-center justify-center z-50 p-4">
           <div className="bg-white dark:bg-[#101010] rounded-3xl p-6 md:p-8 w-full max-w-md animate-slide-up">
@@ -5072,6 +5325,13 @@ const handleGifCategoryClick = (category) => {
                       onKeyDown={(e) => e.key === "Enter" && searchDocuments()}
                       className="flex-1 px-4 py-2 rounded-2xl border border-gray-200 dark:border-zinc-800 focus:border-purple-400 dark:focus:border-purple-500 outline-none bg-white dark:bg-zinc-900 text-gray-800 dark:text-white text-sm"
                     />
+                    <button
+                      onClick={searchDocuments}
+                      disabled={searchingDocuments || !documentSearchQuery.trim()}
+                      className="px-4 py-2 bg-purple-500 text-white rounded-2xl hover:bg-purple-600 transition disabled:bg-gray-400 text-sm font-medium"
+                    >
+                      {searchingDocuments ? <LoadingSpinner size="sm" color="white" /> : "Search"}
+                    </button>
                   </div>
                 </div>
 
@@ -5565,6 +5825,85 @@ const handleGifCategoryClick = (category) => {
           />
         </div>
       )}
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #cbd5e0;
+          border-radius: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #a0aec0;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #4a5568;
+        }
+
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #718096;
+        }
+
+        /* Hide scrollbar for mentions input */
+        .mentions-input__highlighter__substring {
+          visibility: hidden;
+        }
+
+        /* Smooth scroll behavior */
+        html {
+          scroll-behavior: smooth;
+        }
+
+        /* Prevent text selection on buttons */
+        button {
+          -webkit-user-select: none;
+          -moz-user-select: none;
+          -ms-user-select: none;
+          user-select: none;
+        }
+
+        /* Loading animation */
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s infinite linear;
+          background: linear-gradient(
+            to right,
+            #f0f0f0 0%,
+            #e0e0e0 50%,
+            #f0f0f0 100%
+          );
+          background-size: 1000px 100%;
+        }
+
+        .dark .animate-shimmer {
+          background: linear-gradient(
+            to right,
+            #2d3748 0%,
+            #4a5568 50%,
+            #2d3748 100%
+          );
+        }
+      `}</style>
     </div>
   );
 }
+
+   

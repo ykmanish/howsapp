@@ -4441,7 +4441,7 @@ export default function ChatApp() {
                   onChange={(e) =>
                     setProfileForm({ ...profileForm, username: e.target.value })
                   }
-                  className="w-full px-4 py-2 rounded-xl border border-gray-200 dark:border-zinc-800 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-800 text-gray-800 dark:text-white"
+                  className="w-full px-4 py-2 disabled:opacity-50 rounded-xl border border-gray-200 dark:border-zinc-800 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-800 text-gray-800 dark:text-white"
                 />
               </div>
               <div>

@@ -4512,7 +4512,7 @@ export default function ChatApp() {
               value={usernameInput}
               onChange={(e) => setUsernameInput(e.target.value)}
               placeholder="@username"
-              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-gray-700 text-gray-800 dark:text-white mb-4"
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-blue-400 dark:focus:border-blue-500 outline-none bg-white dark:bg-zinc-900 text-gray-800 dark:text-white mb-4"
             />
             <div className="flex gap-3">
               <button
